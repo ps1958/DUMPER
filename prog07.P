@@ -1,0 +1,334 @@
+;;% Name: Pranav Sehgal <ps1958@g.rit.edu>
+;;% Time spent on assignment: 4 Hours
+;;% Collaborators: 
+
+[clause].
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;% standard number predicates
+
+;;% between(Low,High,N) is satisfied when Low <= N <= High
+between(Low,High,Low) :- Low =< High.
+between(Low,High,N) :- Low =< High, LowPlusOne is Low+1, between(LowPlusOne,High,N).
+
+;;% max(A,B,C) is satisfied when C is the maximum of A and B
+max(A,B,A) :- A >= B.
+max(A,B,B) :- A < B.
+
+;;% min(A,B,C) is satisfied when C is the minimum of A and B
+min(A,B,A) :- A =< B.
+min(A,B,B) :- A > B.
+
+;% other arithmetic predicates
+
+;;% pythag(A,B,C) is satisfied when A^2 + B^2 = C^2
+pythag(A,B,C) :- A > 0, B > 0, C > 0, C2 is C * C, C2 is (A * A) + (B * B).
+
+;;% fact(N,NF) is satisfied when NF is N! (N factorial)
+fact(0, 1).
+fact(N, NF) :- N > 0, M is N - 1, fact(M,MF), NF is N * MF.
+
+;;% fib(N, NF) is satisfied when NF is the Nth Fibonacci number
+fib(0, 1).
+fib(1, 1).
+fib(N, NF) :- N > 1, M1 is N - 1, fib(M1,MF1), M2 is N - 2, fib(M2,MF2), NF is MF1 + MF2.
+
+;% standard list predicates
+
+;;% list(Z) is satisfied when `Z` has the form of a list.
+list(nil).
+list(cons(H,T)) :- list(T).
+
+;;% null(XS) is satisfied when `XS` is the empty list.
+null([]).
+;;% notnull(XS) is satisfied when `XS` is a non-empty list.
+notnull([_|_]).
+
+;;% head(XS, H) is satisfied when `H` is the head of `XS`.
+head([H|T], H).
+;;% tail(XS, T) is satisfied when `T` is the tail of `XS`.
+tail([H|T], T).
+
+;;% last(XS, X) is satisfied when `X` is the last element of `XS`.
+last([X], X).
+last([H|T], X) :- last(T, X).
+
+;;% length(XS, N) is satisfied when the length of `XS` is `N`.
+length([], 0).
+length([H|T], N) :- length(T, M), N is M + 1.
+
+;;% ofLength(N, XS) is satisfied when `XS` is a list of length `N`.
+ofLength(0, []).
+ofLength(N, [H|T]) :- N >= 1, M is N - 1, ofLength(M, T).
+
+;;% append(XS, YS, ZS) is satisfied when `ZS` is the append of `XS` and `YS`.
+append([], YS, YS).
+append([X|XS], YS, [X|ZS]) :- append(XS, YS, ZS).
+
+;;% prefix(XS, YS) is satisfied when `YS` is a prefix of `XS`.
+prefix_rec(XS, []).
+prefix_rec([Z|XS], [Z|YS]) :- prefix_rec(XS, YS).
+
+prefix_via_append(XS, YS) :- append(YS, _, XS).
+
+prefix(XS, YS) :- prefix_rec(XS, YS).
+
+;;% suffix(XS, YS) is satisfied when `YS` is a suffix of `XS`.
+suffix_rec(L, L).
+suffix_rec([_|XS], YS) :- suffix_rec(XS, YS).
+
+suffix_via_append(XS, YS) :- append(_, YS, XS).
+
+suffix(XS, YS) :- suffix_rec(XS, YS).
+
+;;% sublist(XS, YS) is satisfied when `YS` is a sublist of `XS`.
+sublist_rec(XS, YS) :- prefix(XS, YS).
+sublist_rec([_|XS], YS) :- sublist_rec(XS, YS).
+
+sublist_via_append(XS, YS) :- append(_, ZS, XS), append(YS, _, ZS).
+
+sublist_via_prefix_suffix(XS, YS) :- suffix(XS, ZS), prefix(ZS, YS).
+
+sublist(XS, YS) :- sublist_rec(XS, YS).
+
+;;% member(Y, XS) is satisfied when `Y` is a member of `XS`.
+member_rec(X, [X|T]).
+member_rec(X, [H|T]) :- member_rec(X, T).
+
+member_via_append(X, L) :- append(_, [X|_], L).
+
+member(X, L) :- member_rec(X, L).
+
+;;% reverse(XS, YS) is satisfied when `YS` is the reverse of `XS`.
+reverse_naive([], []).
+reverse_naive([H|T], LR) :- reverse_naive(T, TR), append(TR, [H], LR).
+
+revapp([], L, L).
+revapp([H|T], L2, L3) :- revapp(T, [H|L2], L3).
+reverse_fast(L, LR) :- revapp(L, [], LR).
+
+reverse(L, LR) :- reverse_fast(L, LR).
+
+;;% palindrome(L) is satisfied when `L` is a palindrome.
+palindrome(L) :- reverse(L, L).
+
+;;% zip(XS, YS, XYS) is satisfied when `XYS` is the zipping of `XS` and `YS`.
+zip([], YS, []).
+zip([X|XS], [], []).
+zip([X|XS], [Y|YS], [pair(X, Y)|ZS]) :- zip(XS, YS, ZS).
+
+;;% permutation(XS, YS) is satisfied when `YS` is a permutation of `XS`.
+permutation([], []).
+permutation([H|T], LP) :-
+  permutation(T, TP),
+  append(TPP, TPS, TP),
+  append(TPP, [H|TPS], LP).
+
+;;% ordered(XS) is satisfied when `XS` is a list in ascending order.
+ordered([]).
+ordered([A]).
+ordered([A, B|L]) :- A =< B, ordered([B|L]).
+
+;;% naive_sort(L, LS) is satisfied when `LS` is a sorting of `L`.
+naive_sort(L, LS) :- permutation(L,LS), ordered(LS).
+
+;;% bsort(L, LS) is satisfied when `LS` is a sorting of `L`.
+;;% bsort implements "bubble sort".
+bsort(L,L) :- ordered(L).
+bsort(L1,LS) :-
+  append(XS,[A,B|YS],L1), A > B,
+  append(XS,[B,A|YS],L2),
+  bsort(L2,LS).
+
+;;% quicksort(L, LS) is satisfied when `LS` is a sorting of `L`.
+;;% quicksort implements "quick sort".
+qsort([], []).
+qsort([H|T], LS) :-
+  qspartition(H, T, LEH, GTH),
+  qsort(LEH, LEHS), qsort(GTH, GTHS),
+  append(LEHS, [H|GTHS], LS).
+
+;;% qspartition(X, L, LEX, GTX) is satisfied
+;;% when `LEX` are the elements of `L` that are less than or equal to `X`
+;;% and `GTX` are the elements of `L` that are greater than `X`.
+qspartition(X, [H|T], [H|LEX], GTX) :- H =< X, qspartition(X, T, LEX, GTX).
+qspartition(X, [H|T], LEX, [H|GTX]) :- H > X,  qspartition(X, T, LEX, GTX).
+qspartition(X, [], [], []).
+
+;% predicates useful for logic puzzles
+
+eqInList(X,X,L) :- member(X,L).
+neqInList(X,Y,L) :- append(L1,[X|L2],L),member(Y,L1).
+neqInList(X,Y,L) :- append(L1,[X|L2],L),member(Y,L2).
+adjInList(X,Y,L) :- append(L1,[X,Y|L2],L).
+adjInList(X,Y,L) :- append(L1,[Y,X|L2],L).
+nadjInList(X,Y,L) :- append(L1,[Z,X|L2],L),member(Y,L1).
+nadjInList(X,Y,L) :- append(L1,[X,Z|L2],L),member(Y,L2).
+ltInList(X,Y,L) :- append(L1,[X|L2],L),member(Y,L2).
+gtInList(X,Y,L) :- append(L1,[X|L2],L),member(Y,L1).
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part A (sum)
+
+;;% DEFINE sum HERE
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part B (prod)
+
+;;% DEFINE prod HERE
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part C (avg)
+
+;;% DEFINE avg HERE
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part D (swizzle)
+
+;;% DEFINE swizzle HERE
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part E (partition)
+
+;;% DEFINE partition HERE
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part F (balanced_partition) !bonus!
+
+;;% DEFINE balanced_partition HERE
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part G (msort)
+
+;;% DEFINE msort HERE
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part H (btreeHeight)
+
+;;% DEFINE btreeHeight HERE
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part I (btreeHighest)
+
+;;% DEFINE btreeHighest HERE
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part J (btreeInternal)
+
+;;% DEFINE btreeInternal HERE
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part K (puzzle_soln)
+
+;;% DEFINE puzzle_soln HERE
+
+;% Alex, Bret, Chris, Derek, Eddie, Fred, Greg, Harold, and John are
+;% nine students who live in a three storey building, with three rooms
+;% on each floor. A room in the West wing, one in the centre, and one
+;% in the East wing. If you look directly at the building, the left
+;% side is West and the right side is East. Each student is assigned
+;% exactly one room.
+;
+;% 1. Harold does not live on the bottom floor.
+;% 2. Fred lives directly above John and directly next to Bret (who lives in the West wing).
+;% 3. Eddie lives in the East wing and one floor higher than Fred.
+;% 4. Derek lives directly above Fred.
+;% 5. Greg lives directly above Chris.
+;
+;% Can you find where each of their rooms is?
+
+;;% 
+
+lives(S,R,F,B) :- studentLivesInRoomOnFloorOfBldg(S,R,F,B).
+studentLivesInRoomOnFloorOfBldg(S,R,bottom,building(F,_,_)) :- studentLivesInRoomOnFloor(S,R,F).
+studentLivesInRoomOnFloorOfBldg(S,R,middle,building(_,F,_)) :- studentLivesInRoomOnFloor(S,R,F).
+studentLivesInRoomOnFloorOfBldg(S,R,top,building(_,_,F)) :- studentLivesInRoomOnFloor(S,R,F).
+studentLivesInRoomOnFloor(S,west,floor(S,_,_)).
+studentLivesInRoomOnFloor(S,center,floor(_,S,_)).
+studentLivesInRoomOnFloor(S,east,floor(_,_,S)).
+
+students([alex,bret,chris,derek,eddie,fred,greg,harold,john]).
+rooms([west,center,east]).
+floors([bottom,middle,top]).
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part L (re_match)
+
+;;% DEFINE re_match HERE
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;% Part M (re_reverse) !bonus!
+
+;;% DEFINE re_reverse HERE
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;% Example binary trees, for tests.
+btreeEx01(leaf).
+btreeEx02(node(leaf,99,leaf)).
+btreeEx03(node(node(leaf,9,leaf),99,node(leaf,999,leaf))).
+btreeEx04(node(node(node(leaf,9,leaf),20,leaf),30,node(node(leaf,99,leaf),33,node(leaf,1000,leaf)))).
+btreeEx05(node(node(node(leaf,9,leaf),99,node(leaf,999,leaf)),9999,node(node(leaf,9,leaf),99,node(leaf,999,leaf)))).
+btreeEx06(node(leaf,5,node(leaf,4,node(leaf,3,node(leaf,2,node(leaf,1,node(leaf,0,leaf))))))).
+btreeEx07(node(leaf,567,node(leaf,208,node(node(leaf,509,leaf),-442,leaf)))).
+btreeEx08(node(leaf,525,node(leaf,609,leaf))).
+btreeEx09(node(leaf,468,node(node(node(leaf,873,node(leaf,315,node(leaf,825,node(leaf,54,node(leaf,885,leaf))))),-34,node(leaf,248,leaf)),-66,node(leaf,456,leaf)))).
+btreeEx10(node(node(leaf,-696,leaf),-930,node(leaf,208,node(leaf,-364,node(node(leaf,484,leaf),-1003,node(node(node(leaf,189,node(node(node(leaf,-75,leaf),214,leaf),872,leaf)),0,node(leaf,-450,leaf)),937,leaf)))))).
+btreeEx11(node(node(node(leaf,3,leaf),3,node(leaf,3,leaf)),3,node(node(leaf,3,leaf),3,node(leaf,3,leaf)))).
+
+[query].
